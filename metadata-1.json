@@ -1,0 +1,7 @@
+{
+  "name": "QC Insight Pro - 품질 관리 판독 전문가",
+  "description": "AI 기반 품질 관리 판독 시스템으로, 업로드된 사진을 분석하여 결함 유형을 판별하고 매뉴얼 기반의 해결책을 제시합니다.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

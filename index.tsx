@@ -40,7 +40,6 @@ interface ReferenceFile {
   type: 'image' | 'text' | 'pdf' | 'folder';
   size?: string;
   lastModified?: string;
-  path?: string;
 }
 
 interface InspectionRecord {
@@ -56,7 +55,6 @@ interface DriveConnection {
   lastSyncTimestamp: number | null;
 }
 
-// --- Constants ---
 const CATEGORIES = [
   "전체",
   "표면 결함",
@@ -67,28 +65,12 @@ const CATEGORIES = [
   "미분류"
 ];
 
-const MOCK_DRIVE_CONTENTS: ReferenceFile[] = [
-  { id: 'f1', name: '2024_생산라인_표준_매뉴얼', type: 'folder', lastModified: '2024-12-01' },
-  { id: 'f2', name: '품질관리_결함_데이터베이스', type: 'folder', lastModified: '2025-01-15' },
-  { id: 'ref1', name: 'A구역_용접_불량_판독기준.pdf', type: 'pdf', size: '2.4MB', lastModified: '2025-02-10' },
-  { id: 'ref2', name: '사출성형_기포_발생_사례.txt', type: 'text', size: '15KB', lastModified: '2024-11-20' },
-  { id: 'ref3', name: '스크래치_허용_범위_이미지.img', type: 'image', size: '4.1MB', lastModified: '2025-01-05' },
-  { id: 'ref4', name: 'B라인_조립_체크리스트.pdf', type: 'pdf', size: '1.2MB', lastModified: '2025-02-28' },
-];
-
 // --- Services ---
 const analyzeDefect = async (
   base64Image: string,
   referenceData?: string
 ): Promise<QCAnalysisResult> => {
-  // Safe environment check
-  const apiKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : '';
-  
-  if (!apiKey) {
-    console.warn("API Key is missing. Please ensure process.env.API_KEY is available.");
-  }
-
-  const ai = new GoogleGenAI({ apiKey: apiKey || '' });
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY || '' });
   const model = 'gemini-3-flash-preview';
   
   const systemInstruction = `
@@ -155,8 +137,13 @@ const analyzeDefect = async (
 
 // --- Components ---
 
-// Header Component
-const Header: React.FC<{ onNewAnalysis: () => void; onOpenHistory: () => void; onOpenKB: () => void; }> = ({ onNewAnalysis, onOpenHistory, onOpenKB }) => (
+interface HeaderProps {
+  onNewAnalysis: () => void;
+  onOpenHistory: () => void;
+  onOpenKB: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onNewAnalysis, onOpenHistory, onOpenKB }) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div className="flex items-center gap-2 cursor-pointer" onClick={onNewAnalysis}>
@@ -178,11 +165,19 @@ const Header: React.FC<{ onNewAnalysis: () => void; onOpenHistory: () => void; o
   </header>
 );
 
-// DriveSetupModal Component
 const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void; onClose: () => void; }> = ({ onComplete, onClose }) => {
   const [step, setStep] = useState<'auth' | 'designate'>('auth');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isProcessing, setIsProcessing] = useState(false);
+
+  const MOCK_DRIVE_CONTENTS: ReferenceFile[] = [
+    { id: 'f1', name: '2024_생산라인_표준_매뉴얼', type: 'folder', lastModified: '2024-12-01' },
+    { id: 'f2', name: '품질관리_결함_데이터베이스', type: 'folder', lastModified: '2025-01-15' },
+    { id: 'ref1', name: 'A구역_용접_불량_판독기준.pdf', type: 'pdf', size: '2.4MB', lastModified: '2025-02-10' },
+    { id: 'ref2', name: '사출성형_기포_발생_사례.txt', type: 'text', size: '15KB', lastModified: '2024-11-20' },
+    { id: 'ref3', name: '스크래치_허용_범위_이미지.img', type: 'image', size: '4.1MB', lastModified: '2025-01-05' },
+    { id: 'ref4', name: 'B라인_조립_체크리스트.pdf', type: 'pdf', size: '1.2MB', lastModified: '2025-02-28' },
+  ];
 
   const handleAuth = () => {
     setIsProcessing(true);
@@ -279,7 +274,6 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
   );
 };
 
-// UploadSection Component
 const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: DriveConnection; onOpenSetup: () => void; isLoading: boolean; }> = ({ onImageSelect, driveInfo, onOpenSetup, isLoading }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -307,10 +301,6 @@ const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: D
             <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-200 group-hover:scale-110 transition-transform"><Upload className="w-10 h-10 text-white" /></div>
             <p className="text-gray-900 font-bold text-lg mb-1">여기를 클릭하여 이미지 업로드</p>
             <p className="text-gray-400 text-sm">또는 파일을 이 창으로 드래그 하세요</p>
-            <div className="mt-8 flex gap-4">
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full"><div className="w-1.5 h-1.5 bg-green-500 rounded-full" /> PNG, JPG</div>
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full"><div className="w-1.5 h-1.5 bg-blue-500 rounded-full" /> Auto-Sync</div>
-            </div>
           </div>
         </div>
       </div>
@@ -348,11 +338,6 @@ const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: D
                   </div>
                 ))}
               </div>
-              <div className="pt-4 mt-auto">
-                <button onClick={onOpenSetup} className="w-full flex items-center justify-center gap-2 py-3 text-[11px] font-bold text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all">
-                  <RefreshCcw className="w-3.5 h-3.5" />지식 베이스 업데이트
-                </button>
-              </div>
             </div>
           )}
         </div>
@@ -361,7 +346,6 @@ const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: D
   );
 };
 
-// AnalysisView Component
 const AnalysisView: React.FC<{ image: string | null; result: QCAnalysisResult | null; isLoading: boolean; }> = ({ image, result, isLoading }) => {
   if (!image && !isLoading) return null;
   return (
@@ -601,12 +585,5 @@ const App: React.FC = () => {
 // Start the app
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  const root = ReactDOM.createRoot(rootElement);
-  root.render(
-    <React.StrictMode>
-      <App />
-    </React.StrictMode>
-  );
-} else {
-  console.error("Failed to find the root element.");
+  ReactDOM.createRoot(rootElement).render(<React.StrictMode><App /></React.StrictMode>);
 }
