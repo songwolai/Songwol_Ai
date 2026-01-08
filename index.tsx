@@ -84,6 +84,10 @@ const analyzeDefect = async (
   // Safe environment check
   const apiKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : '';
   
+  if (!apiKey) {
+    console.warn("API Key is missing. Please ensure process.env.API_KEY is available.");
+  }
+
   const ai = new GoogleGenAI({ apiKey: apiKey || '' });
   const model = 'gemini-3-flash-preview';
   
@@ -149,16 +153,10 @@ const analyzeDefect = async (
   };
 };
 
-// --- Sub-Components ---
+// --- Components ---
 
-// 1. Header
-interface HeaderProps {
-  onNewAnalysis: () => void;
-  onOpenHistory: () => void;
-  onOpenKB: () => void;
-}
-
-const Header: React.FC<HeaderProps> = ({ onNewAnalysis, onOpenHistory, onOpenKB }) => (
+// Header Component
+const Header: React.FC<{ onNewAnalysis: () => void; onOpenHistory: () => void; onOpenKB: () => void; }> = ({ onNewAnalysis, onOpenHistory, onOpenKB }) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
       <div className="flex items-center gap-2 cursor-pointer" onClick={onNewAnalysis}>
@@ -180,7 +178,7 @@ const Header: React.FC<HeaderProps> = ({ onNewAnalysis, onOpenHistory, onOpenKB 
   </header>
 );
 
-// 2. DriveSetupModal
+// DriveSetupModal Component
 const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void; onClose: () => void; }> = ({ onComplete, onClose }) => {
   const [step, setStep] = useState<'auth' | 'designate'>('auth');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -281,7 +279,7 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
   );
 };
 
-// 3. UploadSection
+// UploadSection Component
 const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: DriveConnection; onOpenSetup: () => void; isLoading: boolean; }> = ({ onImageSelect, driveInfo, onOpenSetup, isLoading }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -363,7 +361,7 @@ const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: D
   );
 };
 
-// 4. AnalysisView
+// AnalysisView Component
 const AnalysisView: React.FC<{ image: string | null; result: QCAnalysisResult | null; isLoading: boolean; }> = ({ image, result, isLoading }) => {
   if (!image && !isLoading) return null;
   return (
@@ -590,6 +588,9 @@ const App: React.FC = () => {
       </footer>
       
       <style>{`
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
         @keyframes bounce-subtle { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-4px); } }
         .animate-bounce-subtle { animation: bounce-subtle 3s ease-in-out infinite; }
       `}</style>
@@ -600,5 +601,12 @@ const App: React.FC = () => {
 // Start the app
 const rootElement = document.getElementById('root');
 if (rootElement) {
-  ReactDOM.createRoot(rootElement).render(<React.StrictMode><App /></React.StrictMode>);
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+} else {
+  console.error("Failed to find the root element.");
 }
