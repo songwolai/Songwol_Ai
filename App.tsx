@@ -1,13 +1,23 @@
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 // Correctly placed import for HardDrive icon
-import { HardDrive } from 'lucide-react';
+import { HardDrive, Search, Filter, Calendar, X } from 'lucide-react';
 import Header from './components/Header';
 import UploadSection from './components/UploadSection';
 import AnalysisView from './components/AnalysisView';
 import DriveSetupModal from './components/DriveSetupModal';
 import { QCAnalysisResult, ReferenceFile, InspectionRecord, DriveConnection } from './types';
 import { analyzeDefect } from './services/geminiService';
+
+const CATEGORIES = [
+  "전체",
+  "표면 결함",
+  "구조 결함",
+  "외관 결함",
+  "치수 결함",
+  "기타 결함",
+  "미분류"
+];
 
 const App: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
@@ -20,6 +30,10 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<QCAnalysisResult | null>(null);
   const [history, setHistory] = useState<InspectionRecord[]>([]);
+
+  // Filtering states
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedFilterCategory, setSelectedFilterCategory] = useState("전체");
 
   // Automatically open setup if not connected
   useEffect(() => {
@@ -60,7 +74,7 @@ const App: React.FC = () => {
         result
       };
       
-      setHistory(prev => [newRecord, ...prev].slice(0, 10));
+      setHistory(prev => [newRecord, ...prev].slice(0, 50)); // Store up to 50 records
     } catch (error) {
       console.error("Analysis failed:", error);
       alert("판독 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
@@ -76,6 +90,22 @@ const App: React.FC = () => {
       lastSyncTimestamp: Date.now()
     });
     setIsSetupOpen(false);
+  };
+
+  // Filtered History Logic
+  const filteredHistory = useMemo(() => {
+    return history.filter(record => {
+      const matchesCategory = selectedFilterCategory === "전체" || record.result.category === selectedFilterCategory;
+      const matchesSearch = record.result.defectType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          record.result.evidence.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          record.result.recommendations.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [history, searchQuery, selectedFilterCategory]);
+
+  const clearFilters = () => {
+    setSearchQuery("");
+    setSelectedFilterCategory("전체");
   };
 
   return (
@@ -138,31 +168,95 @@ const App: React.FC = () => {
           isLoading={isLoading}
         />
 
-        {/* History Section */}
+        {/* History Section with Search & Filtering */}
         {history.length > 0 && (
           <section className="mt-20 border-t border-gray-100 pt-16">
-            <div className="flex items-center justify-between mb-10">
-              <h3 className="text-2xl font-black text-gray-900 tracking-tight">최근 판독 타임라인</h3>
-              <button className="text-sm text-blue-600 font-bold px-4 py-2 bg-blue-50 rounded-xl hover:bg-blue-100 transition-colors">이력 데이터 내보내기</button>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-8">
-              {history.map((record) => (
-                <div key={record.id} className="group bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer">
-                  <div className="relative aspect-square mb-4 overflow-hidden rounded-2xl">
-                    <img src={record.imageUrl} alt="이력" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                    <div className="absolute top-3 right-3 bg-white/95 backdrop-blur-md px-2 py-1 rounded-lg text-[9px] font-black text-gray-800 shadow-sm">
-                      #{record.id.toString().slice(-4)}
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">판독 타임라인</h3>
+              
+              <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
+                {/* Search Bar */}
+                <div className="relative w-full sm:w-64 group">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+                  <input 
+                    type="text" 
+                    placeholder="결함명, 근거 검색..." 
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                  />
+                  {searchQuery && (
+                    <button 
+                      onClick={() => setSearchQuery("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 hover:bg-gray-100 rounded-full"
+                    >
+                      <X className="w-3 h-3 text-gray-400" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Category Filter */}
+                <div className="relative w-full sm:w-auto">
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-400" />
+                    <select 
+                      value={selectedFilterCategory}
+                      onChange={(e) => setSelectedFilterCategory(e.target.value)}
+                      className="appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-10 text-sm font-bold text-gray-700 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 cursor-pointer transition-all"
+                    >
+                      {CATEGORIES.map(cat => (
+                        <option key={cat} value={cat}>{cat}</option>
+                      ))}
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                     </div>
                   </div>
-                  <div className="px-1">
-                    <p className="text-sm font-black text-gray-900 truncate mb-1">{record.result.defectType}</p>
-                    <p className="text-[11px] text-gray-400 font-medium">
-                      {new Date(record.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })} • 분석완료
-                    </p>
-                  </div>
                 </div>
-              ))}
+
+                {(searchQuery || selectedFilterCategory !== "전체") && (
+                  <button 
+                    onClick={clearFilters}
+                    className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors"
+                  >
+                    필터 초기화
+                  </button>
+                )}
+              </div>
             </div>
+
+            {filteredHistory.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
+                {filteredHistory.map((record) => (
+                  <div key={record.id} className="group bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer">
+                    <div className="relative aspect-square mb-4 overflow-hidden rounded-2xl">
+                      <img src={record.imageUrl} alt="이력" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-lg text-[8px] font-black text-blue-600 shadow-sm border border-blue-50">
+                        {record.result.category}
+                      </div>
+                      <div className="absolute top-3 right-3 bg-black/60 backdrop-blur-md px-2 py-1 rounded-lg text-[9px] font-black text-white shadow-sm">
+                        #{record.id.toString().slice(-4)}
+                      </div>
+                    </div>
+                    <div className="px-1">
+                      <p className="text-sm font-black text-gray-900 truncate mb-1">{record.result.defectType}</p>
+                      <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(record.timestamp).toLocaleDateString('ko-KR')} • {new Date(record.timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="py-20 text-center bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-200">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 text-gray-300">
+                  <Search className="w-8 h-8" />
+                </div>
+                <p className="text-gray-900 font-bold">일치하는 판독 이력이 없습니다.</p>
+                <p className="text-gray-400 text-sm mt-1">검색어나 카테고리 필터를 변경해 보세요.</p>
+              </div>
+            )}
           </section>
         )}
       </main>

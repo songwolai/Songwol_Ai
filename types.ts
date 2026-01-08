@@ -1,6 +1,7 @@
 
 export interface QCAnalysisResult {
   defectType: string;
+  category: string;
   evidence: string;
   recommendations: string;
 }

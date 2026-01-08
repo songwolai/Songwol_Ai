@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { QCAnalysisResult } from '../types';
-import { ShieldCheck, AlertCircle, Lightbulb, ClipboardList, Loader2 } from 'lucide-react';
+import { ShieldCheck, AlertCircle, Lightbulb, ClipboardList, Loader2, Tag } from 'lucide-react';
 
 interface AnalysisViewProps {
   image: string | null;
@@ -45,9 +45,15 @@ const AnalysisView: React.FC<AnalysisViewProps> = ({ image, result, isLoading })
           {result ? (
             <div className="space-y-6">
               <section>
-                <div className="flex items-center gap-2 mb-2">
-                  <AlertCircle className="w-5 h-5 text-red-500" />
-                  <h4 className="font-bold text-gray-900">[결함 유형]</h4>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <h4 className="font-bold text-gray-900">[결함 유형]</h4>
+                  </div>
+                  <span className="flex items-center gap-1 text-[11px] font-black bg-gray-100 text-gray-600 px-2 py-1 rounded-lg">
+                    <Tag className="w-3 h-3" />
+                    {result.category}
+                  </span>
                 </div>
                 <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
                   <p className="text-red-900 font-semibold">{result.defectType}</p>
