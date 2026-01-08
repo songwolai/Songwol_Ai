@@ -1,34 +1,55 @@
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import * as lucide from 'lucide-react';
+import { 
+  HardDrive, 
+  Camera, 
+  Upload, 
+  ShieldCheck, 
+  RefreshCcw, 
+  Folder, 
+  FileText, 
+  Settings2, 
+  CheckCircle, 
+  AlertCircle, 
+  Lightbulb, 
+  ClipboardList, 
+  Loader2, 
+  Tag, 
+  Search, 
+  Filter, 
+  Calendar, 
+  X, 
+  ChevronRight, 
+  Check,
+  ExternalLink
+} from 'lucide-react';
 import { GoogleGenAI, GenerateContentResponse } from "@google/genai";
 
 // --- Types & Interfaces ---
-export interface QCAnalysisResult {
+interface QCAnalysisResult {
   defectType: string;
   category: string;
   evidence: string;
   recommendations: string;
 }
 
-export interface ReferenceFile {
+interface ReferenceFile {
   id: string;
   name: string;
   type: 'image' | 'text' | 'pdf' | 'folder';
   size?: string;
   lastModified?: string;
-  path?: string;
 }
 
-export interface InspectionRecord {
+interface InspectionRecord {
   id: string;
   timestamp: number;
   imageUrl: string;
   result: QCAnalysisResult;
 }
 
-export interface DriveConnection {
+interface DriveConnection {
   isConnected: boolean;
   designatedSources: ReferenceFile[];
   lastSyncTimestamp: number | null;
@@ -114,7 +135,7 @@ const analyzeDefect = async (
   };
 };
 
-// --- Components ---
+// --- Sub-Components ---
 
 const Header: React.FC = () => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -177,13 +198,13 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-blue-50/30">
           <div className="flex items-center gap-3">
-            <div className="bg-blue-600 p-2 rounded-xl text-white"><lucide.HardDrive className="w-5 h-5" /></div>
+            <div className="bg-blue-600 p-2 rounded-xl text-white"><HardDrive className="w-5 h-5" /></div>
             <div>
               <h2 className="text-lg font-bold text-gray-900 leading-none">지식 베이스 지정</h2>
               <p className="text-[11px] text-blue-600 font-medium mt-1">Google Drive Archive</p>
             </div>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-2 text-2xl">&times;</button>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors p-2 text-2xl outline-none">&times;</button>
         </div>
         <div className="p-8">
           {step === 'auth' ? (
@@ -201,8 +222,8 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
                 <h3 className="text-2xl font-black text-gray-900 mb-3 tracking-tight">드라이브 지식 베이스 연동</h3>
                 <p className="text-gray-500 text-sm leading-relaxed">분석에 필요한 사내 품질 매뉴얼, 결함 사례집 폴더 및 파일을 선택하여 AI의 판독 근거로 지정합니다.</p>
               </div>
-              <button onClick={handleAuth} disabled={isProcessing} className="w-full max-w-sm mx-auto bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 flex items-center justify-center gap-3">
-                {isProcessing ? <lucide.Loader2 className="w-5 h-5 animate-spin" /> : <><lucide.ExternalLink className="w-5 h-5" />구글 드라이브 접근 권한 허용</>}
+              <button onClick={handleAuth} disabled={isProcessing} className="w-full max-w-sm mx-auto bg-blue-600 text-white py-4 rounded-2xl font-bold hover:bg-blue-700 flex items-center justify-center gap-3 transition-all shadow-lg shadow-blue-100">
+                {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><ExternalLink className="w-5 h-5" />구글 드라이브 접근 권한 허용</>}
               </button>
             </div>
           ) : (
@@ -212,7 +233,7 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
                 <div className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-full">{selectedIds.size}개 선택됨</div>
               </div>
               <div className="relative">
-                <lucide.Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <input type="text" placeholder="파일명 또는 폴더명 검색..." className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-2xl text-sm focus:ring-2 focus:ring-blue-500 outline-none" />
               </div>
               <div className="max-h-[320px] overflow-y-auto space-y-2 pr-2 custom-scrollbar">
@@ -220,7 +241,7 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
                   <div key={item.id} onClick={() => toggleSelection(item.id)} className={`flex items-center justify-between p-4 rounded-2xl border transition-all cursor-pointer group ${selectedIds.has(item.id) ? 'border-blue-500 bg-blue-50/50 ring-1 ring-blue-500' : 'border-gray-100 hover:border-blue-200 hover:bg-gray-50'}`}>
                     <div className="flex items-center gap-4">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${item.type === 'folder' ? 'bg-amber-100 text-amber-600' : 'bg-gray-100 text-gray-500'}`}>
-                        {item.type === 'folder' ? <lucide.Folder className="w-5 h-5 fill-current" /> : <lucide.FileText className="w-5 h-5" />}
+                        {item.type === 'folder' ? <Folder className="w-5 h-5 fill-current" /> : <FileText className="w-5 h-5" />}
                       </div>
                       <div className="text-left">
                         <p className={`text-sm font-bold ${selectedIds.has(item.id) ? 'text-blue-700' : 'text-gray-800'}`}>{item.name}</p>
@@ -228,7 +249,7 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
                       </div>
                     </div>
                     <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${selectedIds.has(item.id) ? 'bg-blue-600 border-blue-600 text-white' : 'border-gray-200 group-hover:border-blue-300'}`}>
-                      {selectedIds.has(item.id) && <lucide.Check className="w-3 h-3 stroke-[4]" />}
+                      {selectedIds.has(item.id) && <Check className="w-3 h-3 stroke-[4]" />}
                     </div>
                   </div>
                 ))}
@@ -236,7 +257,7 @@ const DriveSetupModal: React.FC<{ onComplete: (sources: ReferenceFile[]) => void
               <div className="pt-4 flex gap-3">
                 <button onClick={() => setStep('auth')} className="flex-1 py-4 text-gray-500 font-bold hover:bg-gray-50 rounded-2xl">이전</button>
                 <button onClick={handleConfirmDesignation} disabled={isProcessing || selectedIds.size === 0} className="flex-[2] bg-gray-900 text-white py-4 rounded-2xl font-bold hover:bg-black flex items-center justify-center gap-2">
-                  {isProcessing ? <lucide.Loader2 className="w-5 h-5 animate-spin" /> : <>지식 베이스로 추가하기<lucide.ChevronRight className="w-4 h-4" /></>}
+                  {isProcessing ? <Loader2 className="w-5 h-5 animate-spin" /> : <>지식 베이스로 추가하기<ChevronRight className="w-4 h-4" /></>}
                 </button>
               </div>
             </div>
@@ -264,14 +285,14 @@ const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: D
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 overflow-hidden relative group">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-bold flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-xl text-blue-600"><lucide.Camera className="w-5 h-5" /></div>
+              <div className="p-2 bg-blue-50 rounded-xl text-blue-600"><Camera className="w-5 h-5" /></div>
               검사 이미지 판독
             </h2>
             <span className="text-[10px] font-bold text-blue-600 px-2 py-1 bg-blue-50 rounded-lg">Real-time Analysis</span>
           </div>
           <div onClick={() => !isLoading && fileInputRef.current?.click()} className={`border-2 border-dashed rounded-2xl p-14 flex flex-col items-center justify-center cursor-pointer transition-all ${isLoading ? 'bg-gray-50 border-gray-200' : 'border-gray-200 hover:border-blue-400 hover:bg-blue-50/50'}`}>
             <input type="file" ref={fileInputRef} onChange={handleImageChange} className="hidden" accept="image/*" disabled={isLoading} />
-            <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-200 group-hover:scale-110 transition-transform"><lucide.Upload className="w-10 h-10 text-white" /></div>
+            <div className="w-20 h-20 bg-blue-600 rounded-3xl flex items-center justify-center mb-6 shadow-xl shadow-blue-200 group-hover:scale-110 transition-transform"><Upload className="w-10 h-10 text-white" /></div>
             <p className="text-gray-900 font-bold text-lg mb-1">여기를 클릭하여 이미지 업로드</p>
             <p className="text-gray-400 text-sm">또는 파일을 이 창으로 드래그 하세요</p>
           </div>
@@ -281,22 +302,22 @@ const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: D
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 h-full flex flex-col">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-lg font-bold flex items-center gap-3">
-              <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600"><lucide.HardDrive className="w-5 h-5" /></div>
+              <div className="p-2 bg-indigo-50 rounded-xl text-indigo-600"><HardDrive className="w-5 h-5" /></div>
               지식 베이스
             </h2>
-            <button onClick={onOpenSetup} className="p-2 hover:bg-gray-50 text-gray-400 rounded-xl transition-all"><lucide.Settings2 className="w-5 h-5" /></button>
+            <button onClick={onOpenSetup} className="p-2 hover:bg-gray-50 text-gray-400 rounded-xl transition-all"><Settings2 className="w-5 h-5" /></button>
           </div>
           {!driveInfo.isConnected ? (
             <div className="flex-grow flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-indigo-100 rounded-2xl bg-indigo-50/20">
-              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-300 mb-4"><lucide.ShieldCheck className="w-8 h-8" /></div>
+              <div className="w-14 h-14 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-300 mb-4"><ShieldCheck className="w-8 h-8" /></div>
               <p className="text-sm font-bold text-indigo-900 mb-2">연동된 자료가 없습니다</p>
-              <button onClick={onOpenSetup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-sm font-bold">자료 지정하기</button>
+              <button onClick={onOpenSetup} className="w-full py-4 bg-indigo-600 text-white rounded-2xl text-sm font-bold shadow-lg shadow-indigo-100">자료 지정하기</button>
             </div>
           ) : (
             <div className="space-y-5 flex-grow overflow-hidden flex flex-col">
               <div className="flex items-center justify-between bg-green-50 border border-green-100 p-4 rounded-2xl">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center"><lucide.CheckCircle className="w-5 h-5 text-green-500" /></div>
+                  <div className="w-8 h-8 bg-white rounded-lg shadow-sm flex items-center justify-center"><CheckCircle className="w-5 h-5 text-green-500" /></div>
                   <div><p className="text-[11px] font-black text-green-800 uppercase leading-none">Status</p><p className="text-[10px] text-green-600 mt-1 font-bold">동기화 활성화됨</p></div>
                 </div>
                 <div className="text-[10px] text-green-700 font-bold bg-white/50 px-2 py-1 rounded">{driveInfo.designatedSources.length} Sources</div>
@@ -305,7 +326,7 @@ const UploadSection: React.FC<{ onImageSelect: (b: string) => void; driveInfo: D
                 {driveInfo.designatedSources.map((source) => (
                   <div key={source.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-2xl border border-gray-100">
                     <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold ${source.type === 'folder' ? 'bg-amber-100 text-amber-600' : 'bg-white text-gray-400 shadow-sm'}`}>
-                      {source.type === 'folder' ? <lucide.Folder className="w-4 h-4 fill-current" /> : <lucide.FileText className="w-4 h-4" />}
+                      {source.type === 'folder' ? <Folder className="w-4 h-4 fill-current" /> : <FileText className="w-4 h-4" />}
                     </div>
                     <div className="flex-grow min-w-0"><p className="text-[11px] font-bold text-gray-800 truncate">{source.name}</p></div>
                   </div>
@@ -327,37 +348,37 @@ const AnalysisView: React.FC<{ image: string | null; result: QCAnalysisResult | 
         <div className="p-6 bg-gray-900 flex items-center justify-center min-h-[400px]">
           {image && (
             <div className="relative w-full h-full max-h-[500px] flex items-center justify-center">
-              <img src={image} alt="검사 대상" className={`max-w-full max-h-full rounded shadow-2xl object-contain ${isLoading ? 'opacity-50' : 'opacity-100'}`} />
-              {isLoading && <div className="absolute inset-0 flex flex-col items-center justify-center text-white"><lucide.Loader2 className="w-12 h-12 animate-spin text-blue-400 mb-4" /><p className="text-lg font-medium animate-pulse">패턴 분석 및 매뉴얼 대조 중...</p></div>}
+              <img src={image} alt="검사 대상" className={`max-w-full max-h-full rounded shadow-2xl object-contain transition-opacity duration-500 ${isLoading ? 'opacity-50' : 'opacity-100'}`} />
+              {isLoading && <div className="absolute inset-0 flex flex-col items-center justify-center text-white"><Loader2 className="w-12 h-12 animate-spin text-blue-400 mb-4" /><p className="text-lg font-medium animate-pulse">패턴 분석 및 매뉴얼 대조 중...</p></div>}
             </div>
           )}
         </div>
         <div className="p-8 space-y-8">
           <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-            <h3 className="text-xl font-bold flex items-center gap-2"><lucide.ClipboardList className="w-6 h-6 text-blue-600" />품질 관리 판독 리포트</h3>
+            <h3 className="text-xl font-bold flex items-center gap-2"><ClipboardList className="w-6 h-6 text-blue-600" />품질 관리 판독 리포트</h3>
           </div>
           {result ? (
             <div className="space-y-6">
               <section>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2"><lucide.AlertCircle className="w-5 h-5 text-red-500" /><h4 className="font-bold text-gray-900">[결함 유형]</h4></div>
-                  <span className="flex items-center gap-1 text-[11px] font-black bg-gray-100 text-gray-600 px-2 py-1 rounded-lg"><lucide.Tag className="w-3 h-3" />{result.category}</span>
+                  <div className="flex items-center gap-2"><AlertCircle className="w-5 h-5 text-red-500" /><h4 className="font-bold text-gray-900">[결함 유형]</h4></div>
+                  <span className="flex items-center gap-1 text-[11px] font-black bg-gray-100 text-gray-600 px-2 py-1 rounded-lg"><Tag className="w-3 h-3" />{result.category}</span>
                 </div>
                 <div className="p-4 bg-red-50 border border-red-100 rounded-xl"><p className="text-red-900 font-semibold">{result.defectType}</p></div>
               </section>
               <section>
-                <div className="flex items-center gap-2 mb-2"><lucide.ShieldCheck className="w-5 h-5 text-blue-500" /><h4 className="font-bold text-gray-900">[유사 사례 근거]</h4></div>
+                <div className="flex items-center gap-2 mb-2"><ShieldCheck className="w-5 h-5 text-blue-500" /><h4 className="font-bold text-gray-900">[유사 사례 근거]</h4></div>
                 <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl"><p className="text-blue-900 text-sm leading-relaxed">{result.evidence}</p></div>
               </section>
               <section>
-                <div className="flex items-center gap-2 mb-2"><lucide.Lightbulb className="w-5 h-5 text-amber-500" /><h4 className="font-bold text-gray-900">[권장 조치 사항]</h4></div>
+                <div className="flex items-center gap-2 mb-2"><Lightbulb className="w-5 h-5 text-amber-500" /><h4 className="font-bold text-gray-900">[권장 조치 사항]</h4></div>
                 <div className="p-4 bg-amber-50 border border-amber-100 rounded-xl whitespace-pre-wrap"><p className="text-amber-900 text-sm leading-relaxed">{result.recommendations}</p></div>
               </section>
               <div className="pt-4 flex gap-3">
                 <button className="flex-1 bg-gray-900 text-white py-3 rounded-xl font-bold hover:bg-gray-800 transition-colors">리포트 PDF 저장</button>
               </div>
             </div>
-          ) : <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20"><lucide.Loader2 className="w-8 h-8 animate-spin" /><p className="mt-4">분석 결과를 기다리는 중입니다...</p></div>}
+          ) : <div className="h-full flex flex-col items-center justify-center text-gray-400 py-20"><Loader2 className="w-8 h-8 animate-spin" /><p className="mt-4">분석 결과를 기다리는 중입니다...</p></div>}
         </div>
       </div>
     </div>
@@ -376,10 +397,19 @@ const App: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilterCategory, setSelectedFilterCategory] = useState("전체");
 
-  useEffect(() => { if (!driveInfo.isConnected) setTimeout(() => setIsSetupOpen(true), 800); }, [driveInfo.isConnected]);
+  useEffect(() => { 
+    if (!driveInfo.isConnected) {
+      const timer = setTimeout(() => setIsSetupOpen(true), 800);
+      return () => clearTimeout(timer);
+    }
+  }, [driveInfo.isConnected]);
 
   const handleImageSelect = useCallback(async (base64: string) => {
-    if (!driveInfo.isConnected) { alert("품질 판독을 위해 먼저 지식 베이스를 지정해야 합니다."); setIsSetupOpen(true); return; }
+    if (!driveInfo.isConnected) { 
+      alert("품질 판독을 위해 먼저 지식 베이스를 지정해야 합니다."); 
+      setIsSetupOpen(true); 
+      return; 
+    }
     setSelectedImage(base64);
     setIsLoading(true);
     setAnalysisResult(null);
@@ -389,13 +419,19 @@ const App: React.FC = () => {
       const result = await analyzeDefect(base64, refContext);
       setAnalysisResult(result);
       setHistory(prev => [{ id: `REC-${Date.now()}`, timestamp: Date.now(), imageUrl: base64, result }, ...prev].slice(0, 50));
-    } catch (error) { alert("판독 중 오류가 발생했습니다."); } finally { setIsLoading(false); }
+    } catch (error) { 
+      console.error(error);
+      alert("판독 중 오류가 발생했습니다."); 
+    } finally { 
+      setIsLoading(false); 
+    }
   }, [driveInfo]);
 
   const filteredHistory = useMemo(() => {
     return history.filter(record => {
       const matchesCategory = selectedFilterCategory === "전체" || record.result.category === selectedFilterCategory;
-      const matchesSearch = record.result.defectType.toLowerCase().includes(searchQuery.toLowerCase()) || record.result.evidence.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesSearch = record.result.defectType.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          record.result.evidence.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
   }, [history, searchQuery, selectedFilterCategory]);
@@ -405,46 +441,99 @@ const App: React.FC = () => {
       <Header />
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {!driveInfo.isConnected && (
-          <div className="mb-8 p-5 bg-white border border-blue-100 rounded-3xl shadow-xl flex items-center justify-between">
-            <div className="flex items-center gap-4"><div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white"><lucide.HardDrive className="w-6 h-6" /></div><div><p className="text-sm font-black text-gray-900 leading-none mb-1 uppercase tracking-wider">Setup Required</p><p className="text-xs text-blue-600 font-bold">노트북LM처럼 분석에 사용할 사내 드라이브 자료를 지정하세요.</p></div></div>
+          <div className="mb-8 p-5 bg-white border border-blue-100 rounded-3xl shadow-xl flex items-center justify-between animate-bounce-subtle">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center text-white"><HardDrive className="w-6 h-6" /></div>
+              <div>
+                <p className="text-sm font-black text-gray-900 leading-none mb-1 uppercase tracking-wider">Setup Required</p>
+                <p className="text-xs text-blue-600 font-bold">노트북LM처럼 분석에 사용할 사내 드라이브 자료를 지정하세요.</p>
+              </div>
+            </div>
             <button onClick={() => setIsSetupOpen(true)} className="px-6 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-black shadow-lg">자료 지정 시작</button>
           </div>
         )}
         <section className="mb-14 text-center max-w-3xl mx-auto">
-          <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-white shadow-sm border border-blue-50 text-blue-700 rounded-full text-xs font-black mb-6"><span className="relative flex h-2.5 w-2.5"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span><span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span></span>NEXT-GEN QUALITY CONTROL</div>
+          <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-white shadow-sm border border-blue-50 text-blue-700 rounded-full text-xs font-black mb-6">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-blue-600"></span>
+            </span>
+            NEXT-GEN QUALITY CONTROL
+          </div>
           <h2 className="text-5xl font-black text-gray-900 tracking-tighter sm:text-6xl mb-8 leading-[0.95]">사내 지식 기반 <br/><span className="text-transparent bg-clip-text bg-gradient-to-br from-blue-600 via-indigo-600 to-purple-600">품질 AI 판독 시스템</span></h2>
           <p className="text-xl text-gray-500 max-w-xl mx-auto font-medium leading-relaxed">업계 최초 드라이브 다이렉트 인덱싱 기술로, 사내 규정에 100% 부합하는 품질 판독 리포트를 제공합니다.</p>
         </section>
+        
         <UploadSection onImageSelect={handleImageSelect} driveInfo={driveInfo} onOpenSetup={() => setIsSetupOpen(true)} isLoading={isLoading} />
+        
         <AnalysisView image={selectedImage} result={analysisResult} isLoading={isLoading} />
+        
         {history.length > 0 && (
           <section className="mt-20 border-t border-gray-100 pt-16">
-            <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6"><h3 className="text-2xl font-black text-gray-900 tracking-tight">판독 타임라인</h3>
+            <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
+              <h3 className="text-2xl font-black text-gray-900 tracking-tight">판독 타임라인</h3>
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
-                <div className="relative w-full sm:w-64 group"><lucide.Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /><input type="text" placeholder="결함명, 근거 검색..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none" /></div>
-                <div className="relative w-full sm:w-auto"><lucide.Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" /><select value={selectedFilterCategory} onChange={(e) => setSelectedFilterCategory(e.target.value)} className="appearance-none bg-white border border-gray-200 rounded-xl px-10 py-2.5 text-sm font-bold text-gray-700 outline-none cursor-pointer">{CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}</select></div>
+                <div className="relative w-full sm:w-64 group">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input type="text" placeholder="결함명, 근거 검색..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full pl-10 pr-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500/20 outline-none transition-all" />
+                </div>
+                <div className="relative w-full sm:w-auto">
+                  <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+                  <select value={selectedFilterCategory} onChange={(e) => setSelectedFilterCategory(e.target.value)} className="appearance-none bg-white border border-gray-200 rounded-xl px-10 py-2.5 text-sm font-bold text-gray-700 outline-none cursor-pointer w-full">
+                    {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                  </select>
+                </div>
               </div>
             </div>
             {filteredHistory.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
                 {filteredHistory.map((record) => (
                   <div key={record.id} className="group bg-white p-4 rounded-3xl border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-2 transition-all duration-500 cursor-pointer">
-                    <div className="relative aspect-square mb-4 overflow-hidden rounded-2xl"><img src={record.imageUrl} alt="이력" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /><div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-lg text-[8px] font-black text-blue-600 shadow-sm border border-blue-50">{record.result.category}</div></div>
-                    <div className="px-1"><p className="text-sm font-black text-gray-900 truncate mb-1">{record.result.defectType}</p><div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium"><lucide.Calendar className="w-3 h-3" />{new Date(record.timestamp).toLocaleDateString('ko-KR')}</div></div>
+                    <div className="relative aspect-square mb-4 overflow-hidden rounded-2xl">
+                      <img src={record.imageUrl} alt="이력" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                      <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2 py-0.5 rounded-lg text-[8px] font-black text-blue-600 shadow-sm border border-blue-50">
+                        {record.result.category}
+                      </div>
+                    </div>
+                    <div className="px-1">
+                      <p className="text-sm font-black text-gray-900 truncate mb-1">{record.result.defectType}</p>
+                      <div className="flex items-center gap-1 text-[10px] text-gray-400 font-medium">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(record.timestamp).toLocaleDateString('ko-KR')}
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
-            ) : <div className="py-20 text-center bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-200"><p className="text-gray-900 font-bold">일치하는 판독 이력이 없습니다.</p></div>}
+            ) : (
+              <div className="py-20 text-center bg-gray-50/50 rounded-3xl border-2 border-dashed border-gray-200">
+                <p className="text-gray-900 font-bold">일치하는 판독 이력이 없습니다.</p>
+              </div>
+            )}
           </section>
         )}
       </main>
-      {isSetupOpen && <DriveSetupModal onComplete={(s) => { setDriveInfo({ isConnected: true, designatedSources: s, lastSyncTimestamp: Date.now() }); setIsSetupOpen(false); }} onClose={() => setIsSetupOpen(false)} />}
+      
+      {isSetupOpen && (
+        <DriveSetupModal 
+          onComplete={(s) => { 
+            setDriveInfo({ isConnected: true, designatedSources: s, lastSyncTimestamp: Date.now() }); 
+            setIsSetupOpen(false); 
+          }} 
+          onClose={() => setIsSetupOpen(false)} 
+        />
+      )}
+      
       <footer className="bg-white border-t border-gray-100 py-16 mt-32">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center">
-          <div className="flex items-center gap-3 mb-6"><div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-xs">QC</div><span className="font-black text-gray-900 tracking-tighter text-lg uppercase">QC Insight Pro</span></div>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-xs">QC</div>
+            <span className="font-black text-gray-900 tracking-tighter text-lg uppercase">QC Insight Pro</span>
+          </div>
           <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">© 2025 QC Insight Pro. Powered by Google Gemini Intelligence.</p>
         </div>
       </footer>
+      
       <style>{`
         .custom-scrollbar::-webkit-scrollbar { width: 5px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
@@ -456,4 +545,8 @@ const App: React.FC = () => {
   );
 };
 
-ReactDOM.createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);
+// Start the app
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  ReactDOM.createRoot(rootElement).render(<React.StrictMode><App /></React.StrictMode>);
+}
