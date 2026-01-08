@@ -135,22 +135,28 @@ const analyzeDefect = async (
   };
 };
 
-// --- Sub-Components ---
+// --- Components ---
 
-const Header: React.FC = () => (
+interface HeaderProps {
+  onNewAnalysis: () => void;
+  onOpenHistory: () => void;
+  onOpenKB: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ onNewAnalysis, onOpenHistory, onOpenKB }) => (
   <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 cursor-pointer" onClick={onNewAnalysis}>
         <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold">QC</div>
         <h1 className="text-xl font-bold text-gray-900 tracking-tight">
           QC Insight <span className="text-blue-600">Pro</span>
         </h1>
       </div>
       <nav className="hidden md:flex space-x-8">
-        <a href="#" className="text-sm font-medium text-gray-500 hover:text-gray-900">대시보드</a>
-        <a href="#" className="text-sm font-medium text-blue-600">신규 판독</a>
-        <a href="#" className="text-sm font-medium text-gray-500 hover:text-gray-900">판독 이력</a>
-        <a href="#" className="text-sm font-medium text-gray-500 hover:text-gray-900">지식 베이스</a>
+        <button onClick={() => alert("대시보드 기능은 준비 중입니다.")} className="text-sm font-medium text-gray-500 hover:text-gray-900 bg-transparent border-none cursor-pointer">대시보드</button>
+        <button onClick={onNewAnalysis} className="text-sm font-medium text-blue-600 hover:text-blue-700 bg-transparent border-none cursor-pointer">신규 판독</button>
+        <button onClick={onOpenHistory} className="text-sm font-medium text-gray-500 hover:text-gray-900 bg-transparent border-none cursor-pointer">판독 이력</button>
+        <button onClick={onOpenKB} className="text-sm font-medium text-gray-500 hover:text-gray-900 bg-transparent border-none cursor-pointer">지식 베이스</button>
       </nav>
       <div className="flex items-center gap-4">
         <span className="text-xs px-2 py-1 bg-green-100 text-green-700 rounded-full font-medium">System Online</span>
@@ -396,6 +402,9 @@ const App: React.FC = () => {
   const [history, setHistory] = useState<InspectionRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedFilterCategory, setSelectedFilterCategory] = useState("전체");
+  
+  // Refs for scrolling
+  const historyRef = useRef<HTMLElement>(null);
 
   useEffect(() => { 
     if (!driveInfo.isConnected) {
@@ -436,9 +445,32 @@ const App: React.FC = () => {
     });
   }, [history, searchQuery, selectedFilterCategory]);
 
+  // Navigation handlers
+  const handleNewAnalysis = () => {
+    setSelectedImage(null);
+    setAnalysisResult(null);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenHistory = () => {
+    if (historyRef.current) {
+      historyRef.current.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      alert("아직 판독 이력이 없습니다.");
+    }
+  };
+
+  const handleOpenKB = () => {
+    setIsSetupOpen(true);
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50/50">
-      <Header />
+      <Header 
+        onNewAnalysis={handleNewAnalysis}
+        onOpenHistory={handleOpenHistory}
+        onOpenKB={handleOpenKB}
+      />
       <main className="flex-grow max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
         {!driveInfo.isConnected && (
           <div className="mb-8 p-5 bg-white border border-blue-100 rounded-3xl shadow-xl flex items-center justify-between animate-bounce-subtle">
@@ -469,7 +501,7 @@ const App: React.FC = () => {
         <AnalysisView image={selectedImage} result={analysisResult} isLoading={isLoading} />
         
         {history.length > 0 && (
-          <section className="mt-20 border-t border-gray-100 pt-16">
+          <section ref={historyRef} className="mt-20 border-t border-gray-100 pt-16">
             <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
               <h3 className="text-2xl font-black text-gray-900 tracking-tight">판독 타임라인</h3>
               <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto">
@@ -529,6 +561,11 @@ const App: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white font-black text-xs">QC</div>
             <span className="font-black text-gray-900 tracking-tighter text-lg uppercase">QC Insight Pro</span>
+          </div>
+          <div className="flex gap-8 mb-8">
+            <button className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors bg-transparent border-none cursor-not-allowed">Privacy Policy</button>
+            <button className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors bg-transparent border-none cursor-not-allowed">Service Terms</button>
+            <button className="text-xs font-bold text-gray-400 hover:text-gray-900 transition-colors bg-transparent border-none cursor-not-allowed">GCP Security</button>
           </div>
           <p className="text-[11px] font-bold text-gray-300 uppercase tracking-widest">© 2025 QC Insight Pro. Powered by Google Gemini Intelligence.</p>
         </div>
